@@ -3,28 +3,36 @@ local Mouse = Player:GetMouse()
 local RunService = game:GetService("RunService")
 
 local flying = false
-local noclipping = false
+local vehicleFlying = false
 local flightSpeed = 50
 local jumpPower = 50
 local gravity = 196.2  -- Gravidade padrão no Roblox
 
--- Função para ativar/desativar voo
-local function toggleFlight()
-    flying = not flying
-    if flying then
-        FlyButton.Text = "Desativar Voo"
+-- Função para ativar/desativar voo com veículo
+local function toggleVehicleFlight()
+    vehicleFlying = not vehicleFlying
+    if vehicleFlying then
+        -- Criando o veículo para voo
+        local vehicle = Instance.new("VehicleSeat")
+        vehicle.CFrame = Player.Character.HumanoidRootPart.CFrame
+        vehicle.Parent = workspace
+        vehicle.Pilot = Player.Character.HumanoidRootPart
+        Player.Character.HumanoidRootPart.Anchored = false
+        vehicle.MaxSpeed = flightSpeed
+        -- Adicionando a parte do veículo que será pilotada
+        local part = Instance.new("Part")
+        part.Size = Vector3.new(5, 1, 5)  -- Definindo o tamanho da base do veículo
+        part.Position = Player.Character.HumanoidRootPart.Position
+        part.Anchored = false
+        part.CanCollide = false
+        part.Parent = vehicle
     else
-        FlyButton.Text = "Ativar Voo"
-    end
-end
-
--- Função para ativar/desativar noclip
-local function toggleNoClip()
-    noclipping = not noclipping
-    if noclipping then
-        NoClipButton.Text = "Desativar Noclip"
-    else
-        NoClipButton.Text = "Ativar Noclip"
+        -- Destruir o veículo caso o voo seja desativado
+        for _, object in pairs(workspace:GetChildren()) do
+            if object:IsA("VehicleSeat") then
+                object:Destroy()
+            end
+        end
     end
 end
 
@@ -41,41 +49,7 @@ local function adjustGravity(value)
     workspace.Gravity = value
 end
 
--- Loop de voo e noclip
-RunService.RenderStepped:Connect(function()
-    if flying and Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
-        local root = Player.Character.HumanoidRootPart
-        local camera = workspace.CurrentCamera
-        local direction = camera.CFrame.LookVector * flightSpeed
-        root.Velocity = direction
-    end
-
-    -- Noclip
-    if noclipping and Player.Character then
-        local character = Player.Character
-        local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
-        if humanoidRootPart then
-            humanoidRootPart.CanCollide = false
-            for _, part in pairs(character:GetChildren()) do
-                if part:IsA("BasePart") then
-                    part.CanCollide = false
-                end
-            end
-        end
-    else
-        -- Se o noclip estiver desativado, garantir que as colisões sejam ativadas
-        if Player.Character then
-            local character = Player.Character
-            for _, part in pairs(character:GetChildren()) do
-                if part:IsA("BasePart") then
-                    part.CanCollide = true
-                end
-            end
-        end
-    end
-end)
-
--- Criação da GUI com novos botões
+-- Criando a GUI com rolagem
 local function createHubGui()
     -- Criando a Interface
     local ScreenGui = Instance.new("ScreenGui")
@@ -109,23 +83,14 @@ local function createHubGui()
     CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
     CloseButton.Parent = MainFrame
 
-    -- Botão de Voo
-    local FlyButton = Instance.new("TextButton")
-    FlyButton.Text = "Ativar Voo"
-    FlyButton.Size = UDim2.new(0.4, 0, 0.1, 0)
-    FlyButton.Position = UDim2.new(0.3, 0, 0.65, 0)
-    FlyButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    FlyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    FlyButton.Parent = MainFrame
-
-    -- Botão de Noclip
-    local NoClipButton = Instance.new("TextButton")
-    NoClipButton.Text = "Ativar Noclip"
-    NoClipButton.Size = UDim2.new(0.4, 0, 0.1, 0)
-    NoClipButton.Position = UDim2.new(0.3, 0, 0.75, 0)
-    NoClipButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    NoClipButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    NoClipButton.Parent = MainFrame
+    -- Botão de Voo com Veículo
+    local VehicleFlyButton = Instance.new("TextButton")
+    VehicleFlyButton.Text = "Ativar Voo com Veículo"
+    VehicleFlyButton.Size = UDim2.new(0.4, 0, 0.1, 0)
+    VehicleFlyButton.Position = UDim2.new(0.3, 0, 0.65, 0)
+    VehicleFlyButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    VehicleFlyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    VehicleFlyButton.Parent = MainFrame
 
     -- Função de abrir e fechar a GUI
     OpenButton.MouseButton1Click:Connect(function()
@@ -138,9 +103,8 @@ local function createHubGui()
         OpenButton.Visible = true
     end)
 
-    -- Funções de ativar/desativar voo e noclip
-    FlyButton.MouseButton1Click:Connect(toggleFlight)
-    NoClipButton.MouseButton1Click:Connect(toggleNoClip)
+    -- Função de ativar/desativar voo com veículo
+    VehicleFlyButton.MouseButton1Click:Connect(toggleVehicleFlight)
 end
 
 -- Cria o Hub imediatamente quando o jogo começa
