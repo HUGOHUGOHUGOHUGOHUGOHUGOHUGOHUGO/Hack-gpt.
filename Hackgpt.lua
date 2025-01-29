@@ -68,14 +68,27 @@ local function createHubGui()
     CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)  -- Cor do texto branca
     CloseButton.Parent = MainFrame
 
-    -- Botão para conceder todas as GamePasses
-    local GamePassButton = Instance.new("TextButton")
-    GamePassButton.Text = "Conceder GamePasses"
-    GamePassButton.Size = UDim2.new(0.4, 0, 0.1, 0)
-    GamePassButton.Position = UDim2.new(0.3, 0, 0.65, 0)
-    GamePassButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)  -- Cor preta
-    GamePassButton.TextColor3 = Color3.fromRGB(255, 255, 255)  -- Cor do texto branca
-    GamePassButton.Parent = MainFrame
+local flying = false
+local flightSpeed = 50  -- Velocidade do voo
+
+    -- Botão de Voo
+    local FlyButton = Instance.new("TextButton")
+    FlyButton.Text = "Ativar Voo"
+    FlyButton.Size = UDim2.new(0.4, 0, 0.1, 0)
+    FlyButton.Position = UDim2.new(0.3, 0, 0.65, 0)
+    FlyButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    FlyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    FlyButton.Parent = MainFrame
+
+    -- Função para ativar/desativar voo
+    local function toggleFlight()
+        flying = not flying
+        if flying then
+            FlyButton.Text = "Desativar Voo"
+        else
+            FlyButton.Text = "Ativar Voo"
+        end
+    end
 
     -- Ação dos Botões
     OpenButton.MouseButton1Click:Connect(function()
@@ -88,9 +101,18 @@ local function createHubGui()
         OpenButton.Visible = true
     end)
 
-    GamePassButton.MouseButton1Click:Connect(grantAllGamePasses)
-end
+    FlyButton.MouseButton1Click:Connect(toggleFlight)
 
+    -- Loop para mover o personagem enquanto o voo está ativado
+    RunService.RenderStepped:Connect(function()
+        if flying and Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
+            local root = Player.Character.HumanoidRootPart
+            local camera = workspace.CurrentCamera
+            local direction = camera.CFrame.LookVector * flightSpeed
+            root.Velocity = direction
+        end
+    end)
+end
 -- Quando o jogador morrer, recria o Hub
 Player.CharacterAdded:Connect(function()
     -- Aguarda a criação do personagem e recria o Hub
