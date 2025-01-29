@@ -3,29 +3,34 @@ local Mouse = Player:GetMouse()
 
 -- Função para conceder todas as GamePasses automaticamente
 local function grantAllGamePasses()
-    -- A lista de IDs das GamePasses que você deseja que sejam "de graça"
-    local gamePassIds = {12345678, 23456789, 34567890}  -- Coloque os IDs das GamePasses aqui
+    local gamePassService = game:GetService("GamePassService")
+    local success, gamePasses = pcall(function()
+        return gamePassService:GetGamePasses(Player)  -- Tenta obter as GamePasses do jogador
+    end)
+    
+    if success then
+        -- Para cada GamePass, concede automaticamente
+        for _, gamePass in pairs(gamePasses) do
+            local gamePassId = gamePass.Id
+            local hasGamePass = Player:HasGamePass(gamePassId)
 
-    -- Concedendo cada GamePass para o jogador
-    for _, gamePassId in ipairs(gamePassIds) do
-        local success, message = pcall(function()
-            Player:HasGamePass(gamePassId)
-        end)
+            -- Se o jogador não tem a GamePass, concede
+            if not hasGamePass then
+                local successGrant = pcall(function()
+                    Player:GrantGamePass(gamePassId)  -- Concede a GamePass ao jogador
+                end)
 
-        if success then
-            print("O jogador já possui a GamePass: " .. gamePassId)
-        else
-            -- Simula a compra do GamePass
-            local successGrant = pcall(function()
-                Player:GrantGamePass(gamePassId)
-            end)
-
-            if successGrant then
-                print("GamePass " .. gamePassId .. " concedida com sucesso para o jogador!")
+                if successGrant then
+                    print("GamePass " .. gamePassId .. " concedida com sucesso!")
+                else
+                    print("Erro ao conceder a GamePass " .. gamePassId)
+                end
             else
-                print("Erro ao conceder a GamePass " .. gamePassId)
+                print("O jogador já possui a GamePass: " .. gamePassId)
             end
         end
+    else
+        print("Erro ao obter as GamePasses: " .. tostring(gamePasses))
     end
 end
 
@@ -63,34 +68,7 @@ local function createHubGui()
     CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)  -- Cor do texto branca
     CloseButton.Parent = MainFrame
 
-    -- Botão para ajustar a Velocidade
-    local SpeedButton = Instance.new("TextButton")
-    SpeedButton.Text = "Ajustar Velocidade"
-    SpeedButton.Size = UDim2.new(0.4, 0, 0.1, 0)
-    SpeedButton.Position = UDim2.new(0.3, 0, 0.2, 0)
-    SpeedButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)  -- Cor preta
-    SpeedButton.TextColor3 = Color3.fromRGB(255, 255, 255)  -- Cor do texto branca
-    SpeedButton.Parent = MainFrame
-
-    -- Botão para ajustar o Poder de Pulo
-    local JumpPowerButton = Instance.new("TextButton")
-    JumpPowerButton.Text = "Ajustar Pulo"
-    JumpPowerButton.Size = UDim2.new(0.4, 0, 0.1, 0)
-    JumpPowerButton.Position = UDim2.new(0.3, 0, 0.35, 0)
-    JumpPowerButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)  -- Cor preta
-    JumpPowerButton.TextColor3 = Color3.fromRGB(255, 255, 255)  -- Cor do texto branca
-    JumpPowerButton.Parent = MainFrame
-
-    -- Botão para pegar todos os itens
-    local PickUpButton = Instance.new("TextButton")
-    PickUpButton.Text = "Pegar Todos os Itens"
-    PickUpButton.Size = UDim2.new(0.4, 0, 0.1, 0)
-    PickUpButton.Position = UDim2.new(0.3, 0, 0.5, 0)
-    PickUpButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)  -- Cor preta
-    PickUpButton.TextColor3 = Color3.fromRGB(255, 255, 255)  -- Cor do texto branca
-    PickUpButton.Parent = MainFrame
-
-    -- Botão para conceder GamePasses
+    -- Botão para conceder todas as GamePasses
     local GamePassButton = Instance.new("TextButton")
     GamePassButton.Text = "Conceder GamePasses"
     GamePassButton.Size = UDim2.new(0.4, 0, 0.1, 0)
@@ -98,48 +76,6 @@ local function createHubGui()
     GamePassButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)  -- Cor preta
     GamePassButton.TextColor3 = Color3.fromRGB(255, 255, 255)  -- Cor do texto branca
     GamePassButton.Parent = MainFrame
-
-    -- Função para ajustar a velocidade
-    local function adjustSpeed()
-        local input = Instance.new("TextBox")
-        input.Size = UDim2.new(0.3, 0, 0.1, 0)
-        input.Position = UDim2.new(0.35, 0, 0.5, 0)
-        input.Text = tostring(speed)
-        input.Parent = MainFrame
-
-        -- Aguarda o usuário digitar o valor
-        input.FocusLost:Connect(function()
-            local newSpeed = tonumber(input.Text)
-            if newSpeed then
-                speed = newSpeed
-                Player.Character:WaitForChild("Humanoid").WalkSpeed = speed
-            end
-            input:Destroy()
-        end)
-
-        input:CaptureFocus()
-    end
-
-    -- Função para ajustar o poder de pulo
-    local function adjustJumpPower()
-        local input = Instance.new("TextBox")
-        input.Size = UDim2.new(0.3, 0, 0.1, 0)
-        input.Position = UDim2.new(0.35, 0, 0.65, 0)
-        input.Text = tostring(jumpPower)
-        input.Parent = MainFrame
-
-        -- Aguarda o usuário digitar o valor
-        input.FocusLost:Connect(function()
-            local newJumpPower = tonumber(input.Text)
-            if newJumpPower then
-                jumpPower = newJumpPower
-                Player.Character:WaitForChild("Humanoid").JumpPower = jumpPower
-            end
-            input:Destroy()
-        end)
-
-        input:CaptureFocus()
-    end
 
     -- Ação dos Botões
     OpenButton.MouseButton1Click:Connect(function()
@@ -152,15 +88,7 @@ local function createHubGui()
         OpenButton.Visible = true
     end)
 
-    SpeedButton.MouseButton1Click:Connect(adjustSpeed)
-    JumpPowerButton.MouseButton1Click:Connect(adjustJumpPower)
-    PickUpButton.MouseButton1Click:Connect(pickUpAllItems)
     GamePassButton.MouseButton1Click:Connect(grantAllGamePasses)
-
-    -- Configurações iniciais de velocidade e pulo
-    local humanoid = Player.Character:WaitForChild("Humanoid")
-    humanoid.WalkSpeed = speed
-    humanoid.JumpPower = jumpPower
 end
 
 -- Quando o jogador morrer, recria o Hub
@@ -172,3 +100,4 @@ end)
 
 -- Cria o Hub imediatamente quando o jogo começa
 createHubGui()
+e
