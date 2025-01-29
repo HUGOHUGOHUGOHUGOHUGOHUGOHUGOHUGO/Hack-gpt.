@@ -1,34 +1,33 @@
 local Player = game.Players.LocalPlayer
 local Mouse = Player:GetMouse()
 
--- Função para pegar todos os itens de todo o jogo, independentemente da pasta
-local function pickUpAllItems()
-    -- Lista de serviços que vamos percorrer
-    local services = {
-        game.Workspace,
-        game.ReplicatedStorage,
-        game.ServerStorage,
-        game.Lighting,
-        game.CollectionService,
-        game.Players
-    }
-    
-    -- Percorrer todos os serviços e suas pastas
-    for _, service in ipairs(services) do
-        for _, item in ipairs(service:GetDescendants()) do
-            -- Verifica se o item é um "BasePart" ou "Model" ou outros tipos que você deseja pegar
-            if item:IsA("BasePart") or item:IsA("Model") then
-                -- Aqui, podemos destruir o item como exemplo, mas você pode mover para o inventário ou outra coisa
-                item:Destroy()
-                print("Item Pegado: " .. item.Name .. " de " .. service.Name)
+-- Função para conceder todas as GamePasses automaticamente
+local function grantAllGamePasses()
+    -- A lista de IDs das GamePasses que você deseja que sejam "de graça"
+    local gamePassIds = {12345678, 23456789, 34567890}  -- Coloque os IDs das GamePasses aqui
+
+    -- Concedendo cada GamePass para o jogador
+    for _, gamePassId in ipairs(gamePassIds) do
+        local success, message = pcall(function()
+            Player:HasGamePass(gamePassId)
+        end)
+
+        if success then
+            print("O jogador já possui a GamePass: " .. gamePassId)
+        else
+            -- Simula a compra do GamePass
+            local successGrant = pcall(function()
+                Player:GrantGamePass(gamePassId)
+            end)
+
+            if successGrant then
+                print("GamePass " .. gamePassId .. " concedida com sucesso para o jogador!")
+            else
+                print("Erro ao conceder a GamePass " .. gamePassId)
             end
         end
     end
 end
-
--- Variáveis para Controle
-local speed = 16  -- Velocidade padrão
-local jumpPower = 50  -- Poder de pulo padrão
 
 -- Função para criar a GUI do Hub
 local function createHubGui()
@@ -37,28 +36,31 @@ local function createHubGui()
     ScreenGui.Name = "HubGui"
     ScreenGui.Parent = Player:WaitForChild("PlayerGui")
 
-    -- MainFrame
+    -- MainFrame (com transparência)
     local MainFrame = Instance.new("Frame")
     MainFrame.Size = UDim2.new(0.4, 0, 0.5, 0)
     MainFrame.Position = UDim2.new(0.3, 0, 0.25, 0)
     MainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    MainFrame.BackgroundTransparency = 0.5  -- Definindo 50% de transparência
     MainFrame.Visible = false
     MainFrame.Parent = ScreenGui
 
-    -- OpenButton
+    -- OpenButton (botão para abrir)
     local OpenButton = Instance.new("TextButton")
     OpenButton.Text = "Abrir Hub"
     OpenButton.Size = UDim2.new(0.2, 0, 0.1, 0)
     OpenButton.Position = UDim2.new(0, 0, 0.9, 0)
-    OpenButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+    OpenButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)  -- Cor preta
+    OpenButton.TextColor3 = Color3.fromRGB(255, 255, 255)  -- Cor do texto branca
     OpenButton.Parent = ScreenGui
 
-    -- CloseButton
+    -- CloseButton (botão para fechar)
     local CloseButton = Instance.new("TextButton")
     CloseButton.Text = "Fechar"
     CloseButton.Size = UDim2.new(0.2, 0, 0.1, 0)
     CloseButton.Position = UDim2.new(0.8, 0, 0, 0)
-    CloseButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+    CloseButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)  -- Cor preta
+    CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)  -- Cor do texto branca
     CloseButton.Parent = MainFrame
 
     -- Botão para ajustar a Velocidade
@@ -66,7 +68,8 @@ local function createHubGui()
     SpeedButton.Text = "Ajustar Velocidade"
     SpeedButton.Size = UDim2.new(0.4, 0, 0.1, 0)
     SpeedButton.Position = UDim2.new(0.3, 0, 0.2, 0)
-    SpeedButton.BackgroundColor3 = Color3.fromRGB(0, 0, 255)
+    SpeedButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)  -- Cor preta
+    SpeedButton.TextColor3 = Color3.fromRGB(255, 255, 255)  -- Cor do texto branca
     SpeedButton.Parent = MainFrame
 
     -- Botão para ajustar o Poder de Pulo
@@ -74,7 +77,8 @@ local function createHubGui()
     JumpPowerButton.Text = "Ajustar Pulo"
     JumpPowerButton.Size = UDim2.new(0.4, 0, 0.1, 0)
     JumpPowerButton.Position = UDim2.new(0.3, 0, 0.35, 0)
-    JumpPowerButton.BackgroundColor3 = Color3.fromRGB(255, 255, 0)
+    JumpPowerButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)  -- Cor preta
+    JumpPowerButton.TextColor3 = Color3.fromRGB(255, 255, 255)  -- Cor do texto branca
     JumpPowerButton.Parent = MainFrame
 
     -- Botão para pegar todos os itens
@@ -82,8 +86,18 @@ local function createHubGui()
     PickUpButton.Text = "Pegar Todos os Itens"
     PickUpButton.Size = UDim2.new(0.4, 0, 0.1, 0)
     PickUpButton.Position = UDim2.new(0.3, 0, 0.5, 0)
-    PickUpButton.BackgroundColor3 = Color3.fromRGB(255, 0, 255)
+    PickUpButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)  -- Cor preta
+    PickUpButton.TextColor3 = Color3.fromRGB(255, 255, 255)  -- Cor do texto branca
     PickUpButton.Parent = MainFrame
+
+    -- Botão para conceder GamePasses
+    local GamePassButton = Instance.new("TextButton")
+    GamePassButton.Text = "Conceder GamePasses"
+    GamePassButton.Size = UDim2.new(0.4, 0, 0.1, 0)
+    GamePassButton.Position = UDim2.new(0.3, 0, 0.65, 0)
+    GamePassButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)  -- Cor preta
+    GamePassButton.TextColor3 = Color3.fromRGB(255, 255, 255)  -- Cor do texto branca
+    GamePassButton.Parent = MainFrame
 
     -- Função para ajustar a velocidade
     local function adjustSpeed()
@@ -141,6 +155,7 @@ local function createHubGui()
     SpeedButton.MouseButton1Click:Connect(adjustSpeed)
     JumpPowerButton.MouseButton1Click:Connect(adjustJumpPower)
     PickUpButton.MouseButton1Click:Connect(pickUpAllItems)
+    GamePassButton.MouseButton1Click:Connect(grantAllGamePasses)
 
     -- Configurações iniciais de velocidade e pulo
     local humanoid = Player.Character:WaitForChild("Humanoid")
