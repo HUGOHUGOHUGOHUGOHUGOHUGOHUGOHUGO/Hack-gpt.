@@ -1,9 +1,81 @@
 local Player = game.Players.LocalPlayer
 local Mouse = Player:GetMouse()
 local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
 
--- Função para criar a GUI do Hub
+local flying = false
+local noclipping = false
+local flightSpeed = 50
+local jumpPower = 50
+local gravity = 196.2  -- Gravidade padrão no Roblox
+
+-- Função para ativar/desativar voo
+local function toggleFlight()
+    flying = not flying
+    if flying then
+        FlyButton.Text = "Desativar Voo"
+    else
+        FlyButton.Text = "Ativar Voo"
+    end
+end
+
+-- Função para ativar/desativar noclip
+local function toggleNoClip()
+    noclipping = not noclipping
+    if noclipping then
+        NoClipButton.Text = "Desativar Noclip"
+    else
+        NoClipButton.Text = "Ativar Noclip"
+    end
+end
+
+-- Função para ajustar o poder do pulo
+local function adjustJumpPower(value)
+    local humanoid = Player.Character and Player.Character:FindFirstChild("Humanoid")
+    if humanoid then
+        humanoid.JumpPower = value
+    end
+end
+
+-- Função para ajustar a gravidade
+local function adjustGravity(value)
+    workspace.Gravity = value
+end
+
+-- Loop de voo e noclip
+RunService.RenderStepped:Connect(function()
+    if flying and Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
+        local root = Player.Character.HumanoidRootPart
+        local camera = workspace.CurrentCamera
+        local direction = camera.CFrame.LookVector * flightSpeed
+        root.Velocity = direction
+    end
+
+    -- Noclip
+    if noclipping and Player.Character then
+        local character = Player.Character
+        local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+        if humanoidRootPart then
+            humanoidRootPart.CanCollide = false
+            for _, part in pairs(character:GetChildren()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false
+                end
+            end
+        end
+    else
+        -- Se o noclip estiver desativado, garantir que as colisões sejam ativadas
+        if Player.Character then
+            local character = Player.Character
+            for _, part in pairs(character:GetChildren()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = true
+                end
+            end
+        end
+    end
+end)
+
+-- Criação da GUI com novos botões
 local function createHubGui()
     -- Criando a Interface
     local ScreenGui = Instance.new("ScreenGui")
@@ -12,21 +84,12 @@ local function createHubGui()
 
     -- MainFrame (com transparência)
     local MainFrame = Instance.new("Frame")
-    MainFrame.Size = UDim2.new(0.4, 0, 0.6, 0)
+    MainFrame.Size = UDim2.new(0.4, 0, 0.5, 0)
     MainFrame.Position = UDim2.new(0.3, 0, 0.25, 0)
     MainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    MainFrame.BackgroundTransparency = 0.5  -- 50% de transparência
+    MainFrame.BackgroundTransparency = 0.5
     MainFrame.Visible = false
     MainFrame.Parent = ScreenGui
-
-    -- Criando a rolagem (ScrollingFrame)
-    local ScrollingFrame = Instance.new("ScrollingFrame")
-    ScrollingFrame.Size = UDim2.new(1, 0, 1, 0)
-    ScrollingFrame.Position = UDim2.new(0, 0, 0, 0)
-    ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 0)  -- Inicialmente sem tamanho
-    ScrollingFrame.BackgroundTransparency = 1
-    ScrollingFrame.ScrollBarThickness = 10
-    ScrollingFrame.Parent = MainFrame
 
     -- OpenButton (botão para abrir)
     local OpenButton = Instance.new("TextButton")
@@ -46,110 +109,25 @@ local function createHubGui()
     CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
     CloseButton.Parent = MainFrame
 
-    -- Variáveis de voo
-    local flying = false
-    local flightSpeed = 50  -- Velocidade do voo
-    local jumpPower = 50  -- Poder de pulo
-    local gravity = 196.2  -- Gravidade padrão
-    local noclip = false  -- Noclip inicialmente desativado
-
     -- Botão de Voo
     local FlyButton = Instance.new("TextButton")
     FlyButton.Text = "Ativar Voo"
     FlyButton.Size = UDim2.new(0.4, 0, 0.1, 0)
-    FlyButton.Position = UDim2.new(0.3, 0, 0.05, 0)
+    FlyButton.Position = UDim2.new(0.3, 0, 0.65, 0)
     FlyButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     FlyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    FlyButton.Parent = ScrollingFrame
+    FlyButton.Parent = MainFrame
 
-    -- Função para ativar/desativar voo
-    local function toggleFlight()
-        flying = not flying
-        if flying then
-            FlyButton.Text = "Desativar Voo"
-        else
-            FlyButton.Text = "Ativar Voo"
-        end
-    end
+    -- Botão de Noclip
+    local NoClipButton = Instance.new("TextButton")
+    NoClipButton.Text = "Ativar Noclip"
+    NoClipButton.Size = UDim2.new(0.4, 0, 0.1, 0)
+    NoClipButton.Position = UDim2.new(0.3, 0, 0.75, 0)
+    NoClipButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    NoClipButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    NoClipButton.Parent = MainFrame
 
-    -- Função para ativar/desativar noclip
-    local function toggleNoclip()
-        noclip = not noclip
-        if noclip then
-            FlyButton.Text = "Desativar Noclip"
-        else
-            FlyButton.Text = "Ativar Noclip"
-        end
-    end
-
-    -- Função para ajustar a velocidade do voo
-    local function adjustFlightSpeed(value)
-        flightSpeed = value
-    end
-
-    -- Função para ajustar o poder do pulo
-    local function adjustJumpPower(value)
-        jumpPower = value
-        Player.Character:WaitForChild("Humanoid").JumpPower = jumpPower
-    end
-
-    -- Função para ajustar a gravidade
-    local function adjustGravity(value)
-        gravity = value
-        workspace.Gravity = gravity
-    end
-
-    -- Criação dos controles deslizantes (Sliders)
-
-    -- Slider de velocidade de voo
-    local SpeedSlider = Instance.new("TextBox")
-    SpeedSlider.Text = "Velocidade de Voo: " .. flightSpeed
-    SpeedSlider.Size = UDim2.new(0.4, 0, 0.1, 0)
-    SpeedSlider.Position = UDim2.new(0.3, 0, 0.15, 0)
-    SpeedSlider.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    SpeedSlider.TextColor3 = Color3.fromRGB(255, 255, 255)
-    SpeedSlider.Parent = ScrollingFrame
-    SpeedSlider.FocusLost:Connect(function()
-        local value = tonumber(SpeedSlider.Text:match("%d+"))
-        if value then
-            adjustFlightSpeed(value)
-            SpeedSlider.Text = "Velocidade de Voo: " .. value
-        end
-    end)
-
-    -- Slider de poder do pulo
-    local JumpSlider = Instance.new("TextBox")
-    JumpSlider.Text = "Poder de Pulo: " .. jumpPower
-    JumpSlider.Size = UDim2.new(0.4, 0, 0.1, 0)
-    JumpSlider.Position = UDim2.new(0.3, 0, 0.25, 0)
-    JumpSlider.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    JumpSlider.TextColor3 = Color3.fromRGB(255, 255, 255)
-    JumpSlider.Parent = ScrollingFrame
-    JumpSlider.FocusLost:Connect(function()
-        local value = tonumber(JumpSlider.Text:match("%d+"))
-        if value then
-            adjustJumpPower(value)
-            JumpSlider.Text = "Poder de Pulo: " .. value
-        end
-    end)
-
-    -- Slider de gravidade
-    local GravitySlider = Instance.new("TextBox")
-    GravitySlider.Text = "Gravidade: " .. gravity
-    GravitySlider.Size = UDim2.new(0.4, 0, 0.1, 0)
-    GravitySlider.Position = UDim2.new(0.3, 0, 0.35, 0)
-    GravitySlider.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    GravitySlider.TextColor3 = Color3.fromRGB(255, 255, 255)
-    GravitySlider.Parent = ScrollingFrame
-    GravitySlider.FocusLost:Connect(function()
-        local value = tonumber(GravitySlider.Text:match("%d+"))
-        if value then
-            adjustGravity(value)
-            GravitySlider.Text = "Gravidade: " .. value
-        end
-    end)
-
-    -- Ação dos Botões
+    -- Função de abrir e fechar a GUI
     OpenButton.MouseButton1Click:Connect(function()
         MainFrame.Visible = true
         OpenButton.Visible = false
@@ -160,52 +138,10 @@ local function createHubGui()
         OpenButton.Visible = true
     end)
 
-    FlyButton.MouseButton1Click:Connect(function()
-        toggleFlight()
-    end)
-
-    -- Botão de Noclip
-    local NoclipButton = Instance.new("TextButton")
-    NoclipButton.Text = "Ativar Noclip"
-    NoclipButton.Size = UDim2.new(0.4, 0, 0.1, 0)
-    NoclipButton.Position = UDim2.new(0.3, 0, 0.45, 0)
-    NoclipButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    NoclipButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    NoclipButton.Parent = ScrollingFrame
-    NoclipButton.MouseButton1Click:Connect(function()
-        toggleNoclip()
-    end)
-
-    -- Loop para mover o personagem enquanto o voo está ativado
-    RunService.RenderStepped:Connect(function()
-        -- Se noclip estiver ativado, o personagem passa por objetos
-        if noclip and Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
-            local humanoid = Player.Character:FindFirstChild("Humanoid")
-            if humanoid then
-                humanoid.PlatformStand = true  -- Desabilita a colisão com o ambiente
-            end
-        else
-            local humanoid = Player.Character:FindFirstChild("Humanoid")
-            if humanoid then
-                humanoid.PlatformStand = false  -- Restaura a colisão
-            end
-        end
-        
-        -- Se voo estiver ativado, movemos o personagem
-        if flying and Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
-            local root = Player.Character.HumanoidRootPart
-            local camera = workspace.CurrentCamera
-            local direction = camera.CFrame.LookVector * flightSpeed
-            root.Velocity = direction
-        end
-    end)
+    -- Funções de ativar/desativar voo e noclip
+    FlyButton.MouseButton1Click:Connect(toggleFlight)
+    NoClipButton.MouseButton1Click:Connect(toggleNoClip)
 end
-
--- Quando o jogador morrer, recria o Hub
-Player.CharacterAdded:Connect(function()
-    wait(1)  -- Aguarda um momento após o personagem ser criado
-    createHubGui()
-end)
 
 -- Cria o Hub imediatamente quando o jogo começa
 createHubGui()
